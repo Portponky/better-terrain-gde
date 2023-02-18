@@ -1,18 +1,17 @@
-#include "register_types.h"
-
 #include <gdextension_interface.h>
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/defs.hpp>
 #include <godot_cpp/godot.hpp>
 
-//#include "example.h"
-//#include "tests.h"
+#include "BetterTerrain.hpp"
 
 void initialize_better_terrain(godot::ModuleInitializationLevel level)
 {
   if (level != godot::MODULE_INITIALIZATION_LEVEL_SCENE)
     return;
+  
+  godot::ClassDB::register_class<BetterTerrain>();
 }
 
 void uninitialize_better_terrain(godot::ModuleInitializationLevel level)
