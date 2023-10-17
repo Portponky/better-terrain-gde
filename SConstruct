@@ -18,14 +18,14 @@ sources = Glob("src/*.cpp")
 
 if env["platform"] == "macos":
     library = env.SharedLibrary(
-        "bin/better-terrain/libgdbetterterrain.{}.{}.framework/libgdbetterterrain.{}.{}".format(
+        "bin/better-terrain-pp/libgdbetterterrain.{}.{}.framework/libgdbetterterrainpp.{}.{}".format(
             env["platform"], env["target"], env["platform"], env["target"]
         ),
         source=sources,
     )
 else:
     library = env.SharedLibrary(
-        "bin/better-terrain/libgdbetterterrain{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
+        "bin/better-terrain-pp/libgdbetterterrainpp{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
         source=sources,
     )
 
