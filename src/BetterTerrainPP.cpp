@@ -98,6 +98,84 @@ std::map<int, std::vector<int>> peering_bits_after_symmetry(const std::map<int, 
   return result;
 }
 
+std::vector<godot::Vector2i> neighboring_coords(godot::TileMap* tilemap, godot::Vector2i coord, const std::vector<int>& peering)
+{
+  std::vector<godot::Vector2i> result;
+  result.reserve(peering.size());
+  for (int p : peering)
+  {
+    result.push_back(tilemap->get_neighbor_cell(coord, static_cast<godot::TileSet::CellNeighbor>(p)));
+  }
+  return result;
+}
+
+std::vector<godot::Vector2i> associated_vertex_cells(godot::TileMap* tilemap, godot::Vector2i coord, godot::TileSet::CellNeighbor corner)
+{
+  godot::TileSet* tileset = tilemap->get_tileset().ptr();
+  if (tileset->get_tile_shape() == godot::TileSet::TILE_SHAPE_SQUARE ||
+      tileset->get_tile_shape() == godot::TileSet::TILE_SHAPE_ISOMETRIC)
+    switch (corner)
+    {
+    case godot::TileSet::CELL_NEIGHBOR_BOTTOM_RIGHT_CORNER:
+      return neighboring_coords(tilemap, coord, {0, 3, 4});
+    case godot::TileSet::CELL_NEIGHBOR_BOTTOM_LEFT_CORNER:
+      return neighboring_coords(tilemap, coord, {4, 7, 8});
+    case godot::TileSet::CELL_NEIGHBOR_TOP_LEFT_CORNER:
+      return neighboring_coords(tilemap, coord, {8, 11, 12});
+    case godot::TileSet::CELL_NEIGHBOR_TOP_RIGHT_CORNER:
+      return neighboring_coords(tilemap, coord, {12, 15, 0});
+    case godot::TileSet::CELL_NEIGHBOR_RIGHT_CORNER:
+      return neighboring_coords(tilemap, coord, {14, 1, 2});
+    case godot::TileSet::CELL_NEIGHBOR_BOTTOM_CORNER:
+      return neighboring_coords(tilemap, coord, {2, 5, 6});
+    case godot::TileSet::CELL_NEIGHBOR_LEFT_CORNER:
+      return neighboring_coords(tilemap, coord, {6, 9, 10});
+    case godot::TileSet::CELL_NEIGHBOR_TOP_CORNER:
+      return neighboring_coords(tilemap, coord, {10, 13, 14});
+    default:
+      break;
+    }
+
+  if (tileset->get_tile_offset_axis() == godot::TileSet::TILE_OFFSET_AXIS_HORIZONTAL)
+    switch (corner)
+    {
+    case godot::TileSet::CELL_NEIGHBOR_BOTTOM_RIGHT_CORNER:
+      return neighboring_coords(tilemap, coord, {0, 2});
+    case godot::TileSet::CELL_NEIGHBOR_BOTTOM_CORNER:
+      return neighboring_coords(tilemap, coord, {2, 6});
+    case godot::TileSet::CELL_NEIGHBOR_BOTTOM_LEFT_CORNER:
+      return neighboring_coords(tilemap, coord, {6, 8});
+    case godot::TileSet::CELL_NEIGHBOR_TOP_LEFT_CORNER:
+      return neighboring_coords(tilemap, coord, {8, 10});
+    case godot::TileSet::CELL_NEIGHBOR_TOP_CORNER:
+      return neighboring_coords(tilemap, coord, {10, 14});
+    case godot::TileSet::CELL_NEIGHBOR_TOP_RIGHT_CORNER:
+      return neighboring_coords(tilemap, coord, {14, 0});
+    default:
+      break;
+    }
+
+  switch(corner)
+  {
+  case godot::TileSet::CELL_NEIGHBOR_RIGHT_CORNER:
+    return neighboring_coords(tilemap, coord, {14, 2});
+  case godot::TileSet::CELL_NEIGHBOR_BOTTOM_RIGHT_CORNER:
+    return neighboring_coords(tilemap, coord, {2, 4});
+  case godot::TileSet::CELL_NEIGHBOR_BOTTOM_LEFT_CORNER:
+    return neighboring_coords(tilemap, coord, {4, 6});
+  case godot::TileSet::CELL_NEIGHBOR_LEFT_CORNER:
+    return neighboring_coords(tilemap, coord, {6, 10});
+  case godot::TileSet::CELL_NEIGHBOR_TOP_LEFT_CORNER:
+    return neighboring_coords(tilemap, coord, {10, 12});
+  case godot::TileSet::CELL_NEIGHBOR_TOP_RIGHT_CORNER:
+    return neighboring_coords(tilemap, coord, {12, 14});
+  default:
+    break;
+  }
+
+  return {};
+}
+
 template<typename K, typename V>
 V map_safe_get(const std::map<K, V>& m, const K& key, const V& def)
 {
@@ -170,6 +248,8 @@ bool BetterTerrainPP::init(godot::TileMap* map)
       {
         int alternate = source->get_alternative_tile_id(coord, a);
         godot::TileData* td = source->get_tile_data(coord, alternate);
+        if (!td->has_meta(meta_name))
+          continue;
         godot::Dictionary td_meta = td->get_meta(meta_name);
         int td_meta_type = td_meta["type"];
         if (td_meta_type < TerrainType::EMPTY || td_meta_type > terrains.size())
@@ -221,6 +301,9 @@ int BetterTerrainPP::get_cell(int layer, godot::Vector2i coord) const
   godot::TileData* td = m_tilemap->get_cell_tile_data(layer, coord);
   if (!td)
     return TerrainType::EMPTY;
+
+  if (!td->has_meta(meta_name))
+    return TerrainType::NON_TERRAIN;
 
   godot::Dictionary td_meta = td->get_meta(meta_name);
   int td_meta_type = td_meta["type"];
@@ -449,7 +532,59 @@ const BetterTerrainPP::Placement* BetterTerrainPP::update_tile_tiles(godot::Vect
 
 const BetterTerrainPP::Placement* BetterTerrainPP::update_tile_vertices(godot::Vector2i coord, const std::map<godot::Vector2i, int>& types) const
 {
-  return nullptr;
+  int type = map_safe_get(types, coord, -1);
+  int best_score = -1000;
+  std::vector<const Placement*> best;
+
+  auto it = m_cache.find(type);
+  if (it == m_cache.end())
+    return nullptr; //wtf
+
+  for (const auto& p : it->second)
+  {
+    int score = 0;
+    for (const auto& [k, v] : p.peering)
+    {
+      int target = probe(coord, static_cast<godot::TileSet::CellNeighbor>(k), type, types);
+      if (std::find(v.begin(), v.end(), target) != v.end())
+        score += 3;
+      else
+        score -= 10;
+    }
+
+    if (score > best_score)
+    {
+      best_score = score;
+      best = {&p};
+    }
+    else if (score == best_score)
+      best.push_back(&p);
+  }
+
+  if (best.empty())
+    return nullptr;
+
+  return weighted_selection(best, false);
+}
+
+int BetterTerrainPP::probe(godot::Vector2i coord, int peering, int type, const std::map<godot::Vector2i, int>& types) const
+{
+  std::vector<godot::Vector2i> coords = associated_vertex_cells(m_tilemap, coord, static_cast<godot::TileSet::CellNeighbor>(peering));
+  std::vector<int> targets;
+  for (int c = 0; c < coords.size(); ++c)
+    targets.push_back(map_safe_get(types, coords[c], -1));
+
+  int first = targets[0];
+  bool all_equal = true;
+  for (int t = 1; t < targets.size() && all_equal; ++t)
+    if (targets[t] != first)
+      all_equal = false;
+
+  if (all_equal)
+    return first;
+
+  targets.erase(std::remove(targets.begin(), targets.end(), type), targets.end());
+  return *std::min_element(targets.begin(), targets.end());
 }
 
 const BetterTerrainPP::Placement* BetterTerrainPP::weighted_selection(const std::vector<const Placement*>& choices, bool apply_empty_probability) const

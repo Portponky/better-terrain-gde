@@ -56,6 +56,7 @@ private:
   void update_tile_immediate(int layer, godot::Vector2i coord, const std::map<godot::Vector2i, int>& types);
   const Placement* update_tile_tiles(godot::Vector2i coord, const std::map<godot::Vector2i, int>& types, bool apply_empty_probability) const;
   const Placement* update_tile_vertices(godot::Vector2i coord, const std::map<godot::Vector2i, int>& types) const;
+  int probe(godot::Vector2i coord, int peering, int type, const std::map<godot::Vector2i, int>& types) const;
   const Placement* weighted_selection(const std::vector<const Placement*>& choices, bool apply_empty_probability) const;
 };
 
