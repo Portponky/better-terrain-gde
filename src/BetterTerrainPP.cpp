@@ -273,7 +273,7 @@ bool BetterTerrainPP::init(godot::TileMap* map)
           peering[int(key)] = std::move(targets);
         }
 
-        if (td_meta_type == TerrainType::DECORATION && peering.empty())
+        if (td_meta_type == TerrainType::EMPTY && peering.empty())
           continue;
 
         int symmetry = td_meta.get("symmetry", SymmetryType::NONE);
