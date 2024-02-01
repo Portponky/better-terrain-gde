@@ -364,7 +364,7 @@ void BetterTerrainPP::update_terrain_cells(int layer, const godot::Array& cells,
   std::vector<godot::Vector2i> coords;
   coords.reserve(cells.size());
   for (int c = 0; c < cells.size(); ++c)
-    coords.push_back(coords[c]);
+    coords.push_back(cells[c]);
 
   if (and_surrounding_cells)
     coords = widen(coords);
