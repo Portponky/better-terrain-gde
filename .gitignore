@@ -1,3 +1,5 @@
 .sconsign.dblite
 bin/
 *.os
+*.json
+*.obj
