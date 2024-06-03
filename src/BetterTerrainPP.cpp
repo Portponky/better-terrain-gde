@@ -299,10 +299,7 @@ int BetterTerrainPP::get_cell(int layer, godot::Vector2i coord) const
     return TerrainType::EMPTY;
 
   godot::TileData* td = m_tilemap->get_cell_tile_data(layer, coord);
-  if (!td)
-    return TerrainType::EMPTY;
-
-  if (!td->has_meta(meta_name))
+  if (!td || !td->has_meta(meta_name))
     return TerrainType::NON_TERRAIN;
 
   godot::Dictionary td_meta = td->get_meta(meta_name);
@@ -482,9 +479,11 @@ void BetterTerrainPP::update_tile_immediate(int layer, godot::Vector2i coord, co
   if (type < TerrainType::EMPTY || type >= static_cast<int>(m_terrain_types.size()))
     return;
 
+  // Don't access m_terrain_types if type is Empty (-1)
+  const bool terrain_is_decoration = type == TerrainType::EMPTY;
   const Placement* placement {nullptr};
-  if (m_terrain_types[type] == TerrainType::MATCH_TILES || m_terrain_types[type] == TerrainType::DECORATION)
-    placement = update_tile_tiles(coord, types, m_terrain_types[type] == TerrainType::DECORATION);
+  if (terrain_is_decoration || m_terrain_types[type] == TerrainType::MATCH_TILES)
+    placement = update_tile_tiles(coord, types, terrain_is_decoration);
   else if (m_terrain_types[type] == TerrainType::MATCH_VERTICES)
     placement = update_tile_vertices(coord, types);
 
