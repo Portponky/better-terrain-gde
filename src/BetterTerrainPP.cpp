@@ -1,6 +1,7 @@
 #include "BetterTerrainPP.hpp"
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
+#include <godot_cpp/templates/hashfuncs.hpp>
 
 #include <godot_cpp/classes/tile_set_atlas_source.hpp>
 #include <set>
@@ -189,7 +190,7 @@ BetterTerrainPP::Placement BetterTerrainPP::empty_placement{-1, godot::Vector2i(
 
 void BetterTerrainPP::_bind_methods()
 {
-  godot::ClassDB::bind_method(godot::D_METHOD("init", "map"), &BetterTerrainPP::init);
+  godot::ClassDB::bind_method(godot::D_METHOD("init", "map", "fixed_random_seed"), &BetterTerrainPP::init, DEFVAL(false));
   godot::ClassDB::bind_method(godot::D_METHOD("get_cell", "layer", "coord"), &BetterTerrainPP::get_cell);
   godot::ClassDB::bind_method(godot::D_METHOD("set_cells", "layer", "coords", "type"), &BetterTerrainPP::set_cells);
   godot::ClassDB::bind_method(godot::D_METHOD("set_cell", "layer", "coord", "type"), &BetterTerrainPP::set_cell);
@@ -198,7 +199,7 @@ void BetterTerrainPP::_bind_methods()
   godot::ClassDB::bind_method(godot::D_METHOD("update_terrain_area", "layer", "area", "and_surrounding_cells"), &BetterTerrainPP::update_terrain_area, DEFVAL(true));
 }
 
-bool BetterTerrainPP::init(godot::TileMap* map)
+bool BetterTerrainPP::init(godot::TileMap* map, bool fixed_random_seed)
 {
   if (!map)
     return false;
@@ -286,6 +287,7 @@ bool BetterTerrainPP::init(godot::TileMap* map)
     }
   }
 
+  m_fixed_random_seed = fixed_random_seed;
   m_rng.randomize();
   return true;
 }
@@ -526,7 +528,7 @@ const BetterTerrainPP::Placement* BetterTerrainPP::update_tile_tiles(godot::Vect
   if (best.empty())
     return nullptr;
 
-  return weighted_selection(best, apply_empty_probability);
+  return weighted_selection(best, coord, apply_empty_probability);
 }
 
 const BetterTerrainPP::Placement* BetterTerrainPP::update_tile_vertices(godot::Vector2i coord, const std::map<godot::Vector2i, int>& types) const
@@ -563,7 +565,7 @@ const BetterTerrainPP::Placement* BetterTerrainPP::update_tile_vertices(godot::V
   if (best.empty())
     return nullptr;
 
-  return weighted_selection(best, false);
+  return weighted_selection(best, coord, false);
 }
 
 int BetterTerrainPP::probe(godot::Vector2i coord, int peering, int type, const std::map<godot::Vector2i, int>& types) const
@@ -586,10 +588,13 @@ int BetterTerrainPP::probe(godot::Vector2i coord, int peering, int type, const s
   return *std::min_element(targets.begin(), targets.end());
 }
 
-const BetterTerrainPP::Placement* BetterTerrainPP::weighted_selection(const std::vector<const Placement*>& choices, bool apply_empty_probability) const
+const BetterTerrainPP::Placement* BetterTerrainPP::weighted_selection(const std::vector<const Placement*>& choices, const godot::Vector2i& coord, bool apply_empty_probability) const
 {
   if (choices.empty())
     return nullptr;
+
+  if (m_fixed_random_seed)
+    m_rng.set_seed(godot::HashMapHasherDefault::hash(coord));
 
   if (apply_empty_probability)
   {

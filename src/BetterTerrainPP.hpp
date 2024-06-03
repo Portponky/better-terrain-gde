@@ -33,13 +33,14 @@ class BetterTerrainPP : public godot::Object
   std::map<int, std::vector<Placement>> m_cache;
   std::vector<int> m_terrain_types;
 
+  bool m_fixed_random_seed{false};
   mutable godot::RandomNumberGenerator m_rng;
 
 protected:
   static void _bind_methods();
 
 public:
-  bool init(godot::TileMap* map);
+  bool init(godot::TileMap* map, bool fixed_random_seed = false);
 
   int get_cell(int layer, godot::Vector2i coord) const;
   bool set_cell(int layer, godot::Vector2i coord, int type);
@@ -57,6 +58,6 @@ private:
   const Placement* update_tile_tiles(godot::Vector2i coord, const std::map<godot::Vector2i, int>& types, bool apply_empty_probability) const;
   const Placement* update_tile_vertices(godot::Vector2i coord, const std::map<godot::Vector2i, int>& types) const;
   int probe(godot::Vector2i coord, int peering, int type, const std::map<godot::Vector2i, int>& types) const;
-  const Placement* weighted_selection(const std::vector<const Placement*>& choices, bool apply_empty_probability) const;
+  const Placement* weighted_selection(const std::vector<const Placement*>& choices, const godot::Vector2i& coord, bool apply_empty_probability) const;
 };
 
