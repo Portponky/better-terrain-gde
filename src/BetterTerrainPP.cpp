@@ -219,13 +219,13 @@ bool BetterTerrainPP::init(godot::TileMap* map)
 
   std::map<int, std::vector<int>> types;
   godot::Array terrains = meta["terrains"];
-  for (int i = 0; i < terrains.size(); ++i)
+  for (int i = 0; i < static_cast<int>(terrains.size()); ++i)
   {
     godot::Array terrain = terrains[i];
     m_terrain_types.push_back(static_cast<int>(terrain[2]));
     godot::Array categories = terrain[3];
     std::vector<int> bits = {i};
-    for (int c = 0; c < categories.size(); ++c)
+    for (int c = 0; c < static_cast<int>(categories.size()); ++c)
       bits.push_back(categories[c]);
     types[i] = std::move(bits);
     m_cache[i] = {};
@@ -252,12 +252,12 @@ bool BetterTerrainPP::init(godot::TileMap* map)
           continue;
         godot::Dictionary td_meta = td->get_meta(meta_name);
         int td_meta_type = td_meta["type"];
-        if (td_meta_type < TerrainType::EMPTY || td_meta_type > terrains.size())
+        if (td_meta_type < TerrainType::EMPTY || td_meta_type > static_cast<int>(terrains.size()))
           continue;
 
         std::map<int, std::vector<int>> peering;
         godot::Array td_meta_keys = td_meta.keys();
-        for (int k = 0; k < td_meta_keys.size(); ++k)
+        for (int k = 0; k < static_cast<int>(td_meta_keys.size()); ++k)
         {
           auto key = td_meta_keys[k];
           if (key.get_type() != godot::Variant::INT)
@@ -321,7 +321,7 @@ bool BetterTerrainPP::set_cell(int layer, godot::Vector2i coord, int type)
     return true;
   }
 
-  if (type >= m_terrain_types.size())
+  if (type >= static_cast<int>(m_terrain_types.size()))
     return false;
 
   if (m_cache[type].empty())
@@ -339,19 +339,19 @@ bool BetterTerrainPP::set_cells(int layer, const godot::Array& coords, int type)
 
   if (type == TerrainType::EMPTY)
   {
-    for (int c = 0; c < coords.size(); ++c)
+    for (int c = 0; c < static_cast<int>(coords.size()); ++c)
       m_tilemap->erase_cell(layer, coords[c]);
     return true;
   }
 
-  if (type >= m_terrain_types.size())
+  if (type >= static_cast<int>(m_terrain_types.size()))
     return false;
 
   if (m_cache[type].empty())
     return false;
 
   const Placement& p = *(m_cache[type].begin());
-  for (int c = 0; c < coords.size(); ++c)
+  for (int c = 0; c < static_cast<int>(coords.size()); ++c)
     m_tilemap->set_cell(layer, coords[c], p.source_id, p.coord, p.alternative);
   return true;
 }
@@ -363,7 +363,7 @@ void BetterTerrainPP::update_terrain_cells(int layer, const godot::Array& cells,
 
   std::vector<godot::Vector2i> coords;
   coords.reserve(cells.size());
-  for (int c = 0; c < cells.size(); ++c)
+  for (int c = 0; c < static_cast<int>(cells.size()); ++c)
     coords.push_back(cells[c]);
 
   if (and_surrounding_cells)
@@ -479,7 +479,7 @@ const std::vector<int>& BetterTerrainPP::get_terrain_peering_cells() const
 void BetterTerrainPP::update_tile_immediate(int layer, godot::Vector2i coord, const std::map<godot::Vector2i, int>& types)
 {
   int type = map_safe_get(types, coord, -1);
-  if (type < TerrainType::EMPTY || type >= m_terrain_types.size())
+  if (type < TerrainType::EMPTY || type >= static_cast<int>(m_terrain_types.size()))
     return;
 
   const Placement* placement {nullptr};
@@ -571,12 +571,12 @@ int BetterTerrainPP::probe(godot::Vector2i coord, int peering, int type, const s
 {
   std::vector<godot::Vector2i> coords = associated_vertex_cells(m_tilemap, coord, static_cast<godot::TileSet::CellNeighbor>(peering));
   std::vector<int> targets;
-  for (int c = 0; c < coords.size(); ++c)
+  for (int c = 0; c < static_cast<int>(coords.size()); ++c)
     targets.push_back(map_safe_get(types, coords[c], -1));
 
   int first = targets[0];
   bool all_equal = true;
-  for (int t = 1; t < targets.size() && all_equal; ++t)
+  for (int t = 1; t < static_cast<int>(targets.size()) && all_equal; ++t)
     if (targets[t] != first)
       all_equal = false;
 
