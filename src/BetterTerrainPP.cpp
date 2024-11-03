@@ -11,7 +11,7 @@ namespace
 {
 
 const char meta_name[] = "_better_terrain";
-const char meta_version[] = "0.2";
+const char meta_version[] = "0.3";
 
 enum TerrainType {
   MATCH_TILES,
@@ -99,40 +99,40 @@ std::map<int, std::vector<int>> peering_bits_after_symmetry(const std::map<int, 
   return result;
 }
 
-std::vector<godot::Vector2i> neighboring_coords(godot::TileMap* tilemap, godot::Vector2i coord, const std::vector<int>& peering)
+std::vector<godot::Vector2i> neighboring_coords(godot::TileMapLayer* layer, godot::Vector2i coord, const std::vector<int>& peering)
 {
   std::vector<godot::Vector2i> result;
   result.reserve(peering.size());
   for (int p : peering)
   {
-    result.push_back(tilemap->get_neighbor_cell(coord, static_cast<godot::TileSet::CellNeighbor>(p)));
+    result.push_back(layer->get_neighbor_cell(coord, static_cast<godot::TileSet::CellNeighbor>(p)));
   }
   return result;
 }
 
-std::vector<godot::Vector2i> associated_vertex_cells(godot::TileMap* tilemap, godot::Vector2i coord, godot::TileSet::CellNeighbor corner)
+std::vector<godot::Vector2i> associated_vertex_cells(godot::TileMapLayer* layer, godot::Vector2i coord, godot::TileSet::CellNeighbor corner)
 {
-  godot::TileSet* tileset = tilemap->get_tileset().ptr();
+  godot::TileSet* tileset = layer->get_tile_set().ptr();
   if (tileset->get_tile_shape() == godot::TileSet::TILE_SHAPE_SQUARE ||
       tileset->get_tile_shape() == godot::TileSet::TILE_SHAPE_ISOMETRIC)
     switch (corner)
     {
     case godot::TileSet::CELL_NEIGHBOR_BOTTOM_RIGHT_CORNER:
-      return neighboring_coords(tilemap, coord, {0, 3, 4});
+      return neighboring_coords(layer, coord, {0, 3, 4});
     case godot::TileSet::CELL_NEIGHBOR_BOTTOM_LEFT_CORNER:
-      return neighboring_coords(tilemap, coord, {4, 7, 8});
+      return neighboring_coords(layer, coord, {4, 7, 8});
     case godot::TileSet::CELL_NEIGHBOR_TOP_LEFT_CORNER:
-      return neighboring_coords(tilemap, coord, {8, 11, 12});
+      return neighboring_coords(layer, coord, {8, 11, 12});
     case godot::TileSet::CELL_NEIGHBOR_TOP_RIGHT_CORNER:
-      return neighboring_coords(tilemap, coord, {12, 15, 0});
+      return neighboring_coords(layer, coord, {12, 15, 0});
     case godot::TileSet::CELL_NEIGHBOR_RIGHT_CORNER:
-      return neighboring_coords(tilemap, coord, {14, 1, 2});
+      return neighboring_coords(layer, coord, {14, 1, 2});
     case godot::TileSet::CELL_NEIGHBOR_BOTTOM_CORNER:
-      return neighboring_coords(tilemap, coord, {2, 5, 6});
+      return neighboring_coords(layer, coord, {2, 5, 6});
     case godot::TileSet::CELL_NEIGHBOR_LEFT_CORNER:
-      return neighboring_coords(tilemap, coord, {6, 9, 10});
+      return neighboring_coords(layer, coord, {6, 9, 10});
     case godot::TileSet::CELL_NEIGHBOR_TOP_CORNER:
-      return neighboring_coords(tilemap, coord, {10, 13, 14});
+      return neighboring_coords(layer, coord, {10, 13, 14});
     default:
       break;
     }
@@ -141,17 +141,17 @@ std::vector<godot::Vector2i> associated_vertex_cells(godot::TileMap* tilemap, go
     switch (corner)
     {
     case godot::TileSet::CELL_NEIGHBOR_BOTTOM_RIGHT_CORNER:
-      return neighboring_coords(tilemap, coord, {0, 2});
+      return neighboring_coords(layer, coord, {0, 2});
     case godot::TileSet::CELL_NEIGHBOR_BOTTOM_CORNER:
-      return neighboring_coords(tilemap, coord, {2, 6});
+      return neighboring_coords(layer, coord, {2, 6});
     case godot::TileSet::CELL_NEIGHBOR_BOTTOM_LEFT_CORNER:
-      return neighboring_coords(tilemap, coord, {6, 8});
+      return neighboring_coords(layer, coord, {6, 8});
     case godot::TileSet::CELL_NEIGHBOR_TOP_LEFT_CORNER:
-      return neighboring_coords(tilemap, coord, {8, 10});
+      return neighboring_coords(layer, coord, {8, 10});
     case godot::TileSet::CELL_NEIGHBOR_TOP_CORNER:
-      return neighboring_coords(tilemap, coord, {10, 14});
+      return neighboring_coords(layer, coord, {10, 14});
     case godot::TileSet::CELL_NEIGHBOR_TOP_RIGHT_CORNER:
-      return neighboring_coords(tilemap, coord, {14, 0});
+      return neighboring_coords(layer, coord, {14, 0});
     default:
       break;
     }
@@ -159,17 +159,17 @@ std::vector<godot::Vector2i> associated_vertex_cells(godot::TileMap* tilemap, go
   switch(corner)
   {
   case godot::TileSet::CELL_NEIGHBOR_RIGHT_CORNER:
-    return neighboring_coords(tilemap, coord, {14, 2});
+    return neighboring_coords(layer, coord, {14, 2});
   case godot::TileSet::CELL_NEIGHBOR_BOTTOM_RIGHT_CORNER:
-    return neighboring_coords(tilemap, coord, {2, 4});
+    return neighboring_coords(layer, coord, {2, 4});
   case godot::TileSet::CELL_NEIGHBOR_BOTTOM_LEFT_CORNER:
-    return neighboring_coords(tilemap, coord, {4, 6});
+    return neighboring_coords(layer, coord, {4, 6});
   case godot::TileSet::CELL_NEIGHBOR_LEFT_CORNER:
-    return neighboring_coords(tilemap, coord, {6, 10});
+    return neighboring_coords(layer, coord, {6, 10});
   case godot::TileSet::CELL_NEIGHBOR_TOP_LEFT_CORNER:
-    return neighboring_coords(tilemap, coord, {10, 12});
+    return neighboring_coords(layer, coord, {10, 12});
   case godot::TileSet::CELL_NEIGHBOR_TOP_RIGHT_CORNER:
-    return neighboring_coords(tilemap, coord, {12, 14});
+    return neighboring_coords(layer, coord, {12, 14});
   default:
     break;
   }
@@ -190,7 +190,7 @@ BetterTerrainPP::Placement BetterTerrainPP::empty_placement{-1, godot::Vector2i(
 
 void BetterTerrainPP::_bind_methods()
 {
-  godot::ClassDB::bind_method(godot::D_METHOD("init", "map", "fixed_random_seed"), &BetterTerrainPP::init, DEFVAL(false));
+  godot::ClassDB::bind_method(godot::D_METHOD("init", "layer", "fixed_random_seed"), &BetterTerrainPP::init, DEFVAL(false));
   godot::ClassDB::bind_method(godot::D_METHOD("get_cell", "layer", "coord"), &BetterTerrainPP::get_cell);
   godot::ClassDB::bind_method(godot::D_METHOD("set_cells", "layer", "coords", "type"), &BetterTerrainPP::set_cells);
   godot::ClassDB::bind_method(godot::D_METHOD("set_cell", "layer", "coord", "type"), &BetterTerrainPP::set_cell);
@@ -199,16 +199,16 @@ void BetterTerrainPP::_bind_methods()
   godot::ClassDB::bind_method(godot::D_METHOD("update_terrain_area", "layer", "area", "and_surrounding_cells"), &BetterTerrainPP::update_terrain_area, DEFVAL(true));
 }
 
-bool BetterTerrainPP::init(godot::TileMap* map, bool fixed_random_seed)
+bool BetterTerrainPP::init(godot::TileMapLayer* layer, bool fixed_random_seed)
 {
-  if (!map)
+  if (!layer)
     return false;
 
-  auto tileset = map->get_tileset();
+  auto tileset = layer->get_tile_set();
   if (!tileset.is_valid())
     return false;
 
-  m_tilemap = map;
+  m_tilemap_layer = layer;
   m_tileset = tileset.ptr();
 
   godot::Dictionary meta = tileset->get_meta(meta_name);
@@ -292,15 +292,15 @@ bool BetterTerrainPP::init(godot::TileMap* map, bool fixed_random_seed)
   return true;
 }
 
-int BetterTerrainPP::get_cell(int layer, godot::Vector2i coord) const
+int BetterTerrainPP::get_cell(godot::TileMapLayer* layer, godot::Vector2i coord) const
 {
-  if (!m_tilemap || !m_tileset || layer < 0 || layer >= m_tilemap->get_layers_count())
+  if (!layer || !m_tileset)
     return TerrainType::ERROR;
 
-  if (m_tilemap->get_cell_source_id(layer, coord) == -1)
+  if (layer->get_cell_source_id(coord) == -1)
     return TerrainType::EMPTY;
 
-  godot::TileData* td = m_tilemap->get_cell_tile_data(layer, coord);
+  godot::TileData* td = layer->get_cell_tile_data(coord);
   if (!td || !td->has_meta(meta_name))
     return TerrainType::NON_TERRAIN;
 
@@ -309,14 +309,14 @@ int BetterTerrainPP::get_cell(int layer, godot::Vector2i coord) const
   return td_meta_type;
 }
 
-bool BetterTerrainPP::set_cell(int layer, godot::Vector2i coord, int type)
+bool BetterTerrainPP::set_cell(godot::TileMapLayer* layer, godot::Vector2i coord, int type)
 {
-  if (!m_tilemap || !m_tileset || layer < 0 || layer >= m_tilemap->get_layers_count() || type < TerrainType::EMPTY)
+  if (!layer || !m_tileset || type < TerrainType::EMPTY)
     return false;
 
   if (type == TerrainType::EMPTY)
   {
-    m_tilemap->erase_cell(layer, coord);
+    layer->erase_cell(coord);
     return true;
   }
 
@@ -327,19 +327,19 @@ bool BetterTerrainPP::set_cell(int layer, godot::Vector2i coord, int type)
     return false;
 
   const Placement& p = *(m_cache[type].begin());
-  m_tilemap->set_cell(layer, coord, p.source_id, p.coord, p.alternative);
+  layer->set_cell(coord, p.source_id, p.coord, p.alternative);
   return true;
 }
 
-bool BetterTerrainPP::set_cells(int layer, const godot::Array& coords, int type)
+bool BetterTerrainPP::set_cells(godot::TileMapLayer* layer, const godot::Array& coords, int type)
 {
-  if (!m_tilemap || !m_tileset || layer < 0 || layer >= m_tilemap->get_layers_count() || type < TerrainType::EMPTY)
+  if (!layer || !m_tileset || type < TerrainType::EMPTY)
     return false;
 
   if (type == TerrainType::EMPTY)
   {
     for (int c = 0; c < static_cast<int>(coords.size()); ++c)
-      m_tilemap->erase_cell(layer, coords[c]);
+      layer->erase_cell(coords[c]);
     return true;
   }
 
@@ -351,13 +351,13 @@ bool BetterTerrainPP::set_cells(int layer, const godot::Array& coords, int type)
 
   const Placement& p = *(m_cache[type].begin());
   for (int c = 0; c < static_cast<int>(coords.size()); ++c)
-    m_tilemap->set_cell(layer, coords[c], p.source_id, p.coord, p.alternative);
+    layer->set_cell(coords[c], p.source_id, p.coord, p.alternative);
   return true;
 }
 
-void BetterTerrainPP::update_terrain_cells(int layer, const godot::Array& cells, bool and_surrounding_cells)
+void BetterTerrainPP::update_terrain_cells(godot::TileMapLayer* layer, const godot::Array& cells, bool and_surrounding_cells)
 {
-  if (!m_tilemap || !m_tileset || layer < 0 || layer >= m_tilemap->get_layers_count())
+  if (!layer || !m_tileset)
     return;
 
   std::vector<godot::Vector2i> coords;
@@ -366,8 +366,8 @@ void BetterTerrainPP::update_terrain_cells(int layer, const godot::Array& cells,
     coords.push_back(cells[c]);
 
   if (and_surrounding_cells)
-    coords = widen(coords);
-  auto needed_cells = widen(coords);
+    coords = widen(layer, coords);
+  auto needed_cells = widen(layer, coords);
 
   std::map<godot::Vector2i, int> types;
   for (const auto& c : needed_cells)
@@ -377,16 +377,16 @@ void BetterTerrainPP::update_terrain_cells(int layer, const godot::Array& cells,
     update_tile_immediate(layer, c, types);
 }
 
-void BetterTerrainPP::update_terrain_cell(int layer, godot::Vector2i cell, bool and_surrounding_cells)
+void BetterTerrainPP::update_terrain_cell(godot::TileMapLayer* layer, godot::Vector2i cell, bool and_surrounding_cells)
 {
   godot::Array cells;
   cells.push_back(cell);
   update_terrain_cells(layer, cells, and_surrounding_cells);
 }
 
-void BetterTerrainPP::update_terrain_area(int layer, godot::Rect2i area, bool and_surrounding_cells)
+void BetterTerrainPP::update_terrain_area(godot::TileMapLayer* layer, godot::Rect2i area, bool and_surrounding_cells)
 {
-  if (!m_tilemap || !m_tileset || layer < 0 || layer >= m_tilemap->get_layers_count())
+  if (!layer || !m_tileset)
     return;
 
   area = area.abs();
@@ -404,12 +404,12 @@ void BetterTerrainPP::update_terrain_area(int layer, godot::Rect2i area, bool an
   }
 
   std::vector<godot::Vector2i> additional_cells;
-  std::vector<godot::Vector2i> needed_cells = widen_with_exclusion(edges, area);
+  std::vector<godot::Vector2i> needed_cells = widen_with_exclusion(layer, edges, area);
 
   if (and_surrounding_cells)
   {
     additional_cells = needed_cells;
-    needed_cells = widen_with_exclusion(needed_cells, area);
+    needed_cells = widen_with_exclusion(layer, needed_cells, area);
   }
 
   std::map<godot::Vector2i, int> types;
@@ -429,7 +429,7 @@ void BetterTerrainPP::update_terrain_area(int layer, godot::Rect2i area, bool an
     update_tile_immediate(layer, c, types);
 }
 
-std::vector<godot::Vector2i> BetterTerrainPP::widen(const std::vector<godot::Vector2i>& coords) const
+std::vector<godot::Vector2i> BetterTerrainPP::widen(godot::TileMapLayer* layer, const std::vector<godot::Vector2i>& coords) const
 {
   std::set<godot::Vector2i> result;
   for (const godot::Vector2i& c : coords)
@@ -437,7 +437,7 @@ std::vector<godot::Vector2i> BetterTerrainPP::widen(const std::vector<godot::Vec
     result.insert(c);
     for (int p : get_terrain_peering_cells())
     {
-      godot::Vector2i t = m_tilemap->get_neighbor_cell(c, static_cast<godot::TileSet::CellNeighbor>(p));
+      godot::Vector2i t = layer->get_neighbor_cell(c, static_cast<godot::TileSet::CellNeighbor>(p));
       result.insert(t);
     }
   }
@@ -445,7 +445,7 @@ std::vector<godot::Vector2i> BetterTerrainPP::widen(const std::vector<godot::Vec
   return {result.begin(), result.end()};
 }
 
-std::vector<godot::Vector2i> BetterTerrainPP::widen_with_exclusion(const std::vector<godot::Vector2i>& coords, const godot::Rect2i& exclusion) const
+std::vector<godot::Vector2i> BetterTerrainPP::widen_with_exclusion(godot::TileMapLayer* layer, const std::vector<godot::Vector2i>& coords, const godot::Rect2i& exclusion) const
 {
   std::set<godot::Vector2i> result;
   for (const godot::Vector2i& c : coords)
@@ -455,7 +455,7 @@ std::vector<godot::Vector2i> BetterTerrainPP::widen_with_exclusion(const std::ve
 
     for (int p : get_terrain_peering_cells())
     {
-      godot::Vector2i t = m_tilemap->get_neighbor_cell(c, static_cast<godot::TileSet::CellNeighbor>(p));
+      godot::Vector2i t = layer->get_neighbor_cell(c, static_cast<godot::TileSet::CellNeighbor>(p));
       if (!exclusion.has_point(t))
         result.insert(t);
     }
@@ -475,7 +475,7 @@ const std::vector<int>& BetterTerrainPP::get_terrain_peering_cells() const
   return terrain_peering_horiztonal_tiles;
 }
 
-void BetterTerrainPP::update_tile_immediate(int layer, godot::Vector2i coord, const std::map<godot::Vector2i, int>& types)
+void BetterTerrainPP::update_tile_immediate(godot::TileMapLayer* layer, godot::Vector2i coord, const std::map<godot::Vector2i, int>& types)
 {
   int type = map_safe_get(types, coord, -1);
   if (type < TerrainType::EMPTY || type >= static_cast<int>(m_terrain_types.size()))
@@ -485,15 +485,15 @@ void BetterTerrainPP::update_tile_immediate(int layer, godot::Vector2i coord, co
   const bool terrain_is_decoration = type == TerrainType::EMPTY;
   const Placement* placement {nullptr};
   if (terrain_is_decoration || m_terrain_types[type] == TerrainType::MATCH_TILES)
-    placement = update_tile_tiles(coord, types, terrain_is_decoration);
+    placement = update_tile_tiles(layer, coord, types, terrain_is_decoration);
   else if (m_terrain_types[type] == TerrainType::MATCH_VERTICES)
-    placement = update_tile_vertices(coord, types);
+    placement = update_tile_vertices(layer, coord, types);
 
   if (placement)
-    m_tilemap->set_cell(layer, coord, placement->source_id, placement->coord, placement->alternative);
+    layer->set_cell(coord, placement->source_id, placement->coord, placement->alternative);
 }
 
-const BetterTerrainPP::Placement* BetterTerrainPP::update_tile_tiles(godot::Vector2i coord, const std::map<godot::Vector2i, int>& types, bool apply_empty_probability) const
+const BetterTerrainPP::Placement* BetterTerrainPP::update_tile_tiles(godot::TileMapLayer* layer, godot::Vector2i coord, const std::map<godot::Vector2i, int>& types, bool apply_empty_probability) const
 {
   int type = map_safe_get(types, coord, -1);
   int best_score = -1000;
@@ -508,7 +508,7 @@ const BetterTerrainPP::Placement* BetterTerrainPP::update_tile_tiles(godot::Vect
     int score = 0;
     for (const auto& [k, v] : p.peering)
     {
-      godot::Vector2i neighbor = m_tilemap->get_neighbor_cell(coord, static_cast<godot::TileSet::CellNeighbor>(k));
+      godot::Vector2i neighbor = layer->get_neighbor_cell(coord, static_cast<godot::TileSet::CellNeighbor>(k));
       int target = map_safe_get(types, neighbor, -2);
       if (std::find(v.begin(), v.end(), target) != v.end())
         score += 3;
@@ -531,7 +531,7 @@ const BetterTerrainPP::Placement* BetterTerrainPP::update_tile_tiles(godot::Vect
   return weighted_selection(best, coord, apply_empty_probability);
 }
 
-const BetterTerrainPP::Placement* BetterTerrainPP::update_tile_vertices(godot::Vector2i coord, const std::map<godot::Vector2i, int>& types) const
+const BetterTerrainPP::Placement* BetterTerrainPP::update_tile_vertices(godot::TileMapLayer* layer, godot::Vector2i coord, const std::map<godot::Vector2i, int>& types) const
 {
   int type = map_safe_get(types, coord, -1);
   int best_score = -1000;
@@ -546,7 +546,7 @@ const BetterTerrainPP::Placement* BetterTerrainPP::update_tile_vertices(godot::V
     int score = 0;
     for (const auto& [k, v] : p.peering)
     {
-      int target = probe(coord, static_cast<godot::TileSet::CellNeighbor>(k), type, types);
+      int target = probe(layer, coord, static_cast<godot::TileSet::CellNeighbor>(k), type, types);
       if (std::find(v.begin(), v.end(), target) != v.end())
         score += 3;
       else
@@ -568,9 +568,9 @@ const BetterTerrainPP::Placement* BetterTerrainPP::update_tile_vertices(godot::V
   return weighted_selection(best, coord, false);
 }
 
-int BetterTerrainPP::probe(godot::Vector2i coord, int peering, int type, const std::map<godot::Vector2i, int>& types) const
+int BetterTerrainPP::probe(godot::TileMapLayer* layer, godot::Vector2i coord, int peering, int type, const std::map<godot::Vector2i, int>& types) const
 {
-  std::vector<godot::Vector2i> coords = associated_vertex_cells(m_tilemap, coord, static_cast<godot::TileSet::CellNeighbor>(peering));
+  std::vector<godot::Vector2i> coords = associated_vertex_cells(layer, coord, static_cast<godot::TileSet::CellNeighbor>(peering));
   std::vector<int> targets;
   for (int c = 0; c < static_cast<int>(coords.size()); ++c)
     targets.push_back(map_safe_get(types, coords[c], -1));
