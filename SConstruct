@@ -4,7 +4,7 @@ import sys
 
 env = SConscript("godot-cpp/SConstruct")
 
-# For the reference:
+# For reference:
 # - CCFLAGS are compilation flags shared between C and C++
 # - CFLAGS are for C-specific compilation flags
 # - CXXFLAGS are for C++-specific compilation flags
@@ -18,11 +18,22 @@ sources = Glob("src/*.cpp")
 
 if env["platform"] == "macos":
     library = env.SharedLibrary(
-        "bin/better-terrain-pp/libgdbetterterrain.{}.{}.framework/libgdbetterterrainpp.{}.{}".format(
+        "bin/better-terrain-pp/libgdbetterterrainpp.{}.{}.framework/libgdbetterterrainpp.{}.{}".format(
             env["platform"], env["target"], env["platform"], env["target"]
         ),
         source=sources,
     )
+elif env["platform"] == "ios":
+    if env["ios_simulator"]:
+        library = env.StaticLibrary(
+            "bin/better-terrain-pp/libgdbetterterrainpp.{}.{}.simulator.a".format(env["platform"], env["target"]),
+            source=sources,
+        )
+    else:
+        library = env.StaticLibrary(
+            "bin/better-terrain-pp/libgdbetterterrainpp.{}.{}.a".format(env["platform"], env["target"]),
+            source=sources,
+        )
 else:
     library = env.SharedLibrary(
         "bin/better-terrain-pp/libgdbetterterrainpp{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
